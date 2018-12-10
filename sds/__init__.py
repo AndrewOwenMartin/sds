@@ -1,25 +1,23 @@
-from collections import namedtuple
+import collections
 import functools
 import itertools
+import itertools # for itertools.count
 import json
 import queue
-import time # for time.sleep
-import itertools # for itertools.count
-import threading # for threading.Thread
-import collections
 import random
+import threading # for threading.Thread
+import time # for time.sleep
+
 class Agent:
     """\
 Data structure for defining an SDS Agent, can only maintain the
-attributes 'hypothesis' and 'active'.\
-"""
+attributes 'hypothesis' and 'active'."""
     __slots__ = ('hypothesis','active')
 
     def __init__(self, hypothesis=None, active=False):
         """\
 Initialise an agent with specific values for hypothesis and active.
-Defaults to inactive with no hypothesis.\
-"""
+Defaults to inactive with no hypothesis."""
         self.hypothesis = hypothesis
 
         self.active = active
@@ -27,10 +25,9 @@ Defaults to inactive with no hypothesis.\
     @staticmethod
     def initialise(agent_count):
         """\
-    Returns a list of length agent_count, of inactive Agents with no
-    hypothesis; suitable for use as a swarm. For example:
-        swarm = sds.Agent.initialise(agent_count=1000)
-    """
+Returns a list of length agent_count, of inactive Agents with no
+hypothesis; suitable for use as a swarm. For example:
+swarm = sds.Agent.initialise(agent_count=1000)"""
         return [
             Agent(hypothesis=None, active=False)
             for _
@@ -39,16 +36,19 @@ Defaults to inactive with no hypothesis.\
 
     def __iter__(self):
         """ Iterating over an agent returns its hypothesis, then its
-            activity.
-        """
+activity."""
         yield self.hypothesis
         yield self.active
-ReadOnlyAgent = namedtuple("ReadOnlyAgent",("hypothesis","active"))
+
+ReadOnlyAgent = collections.namedtuple(
+    "ReadOnlyAgent",
+    ("hypothesis","active")
+)
 
 ReadOnlyAgent.__doc__ = """\
 namedtuple representation of an agent. Attributes are hypothesis and
-active.\
-"""
+active."""
+
 def generic_test_phase(
     swarm,
     microtests,
@@ -62,8 +62,7 @@ def generic_test_phase(
     """\
 Perform a test phase. Fully configurable. Consider using the more
 convenient and readable functions sds.test_phase and
-sds.comparative_test_phase.\
-"""
+sds.comparative_test_phase."""
 
     if compare:
 
@@ -117,6 +116,7 @@ sds.comparative_test_phase.\
             )
 
             yield
+
 def test_phase(
     swarm,
     microtests,
@@ -129,8 +129,7 @@ def test_phase(
 Perform a test phase with boolean microtests.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     test_phase_generator = generic_test_phase(
         swarm=swarm,
@@ -144,6 +143,7 @@ agent.\
 
     for _ in test_phase_generator:
         yield
+
 def comparative_test_phase(
     swarm,
     microtests,
@@ -158,8 +158,7 @@ if their microtest result is larger than that of a randomly chosen
 agent.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     test_phase = generic_test_phase(
         swarm=swarm,
@@ -173,6 +172,7 @@ agent.\
 
     for _ in test_phase:
         yield
+
 def generic_single_agent_test(
     agent,
     swarm,
@@ -215,6 +215,7 @@ list or set."""
         test_result = test_result > polled_result
 
     agent.active = test_result
+
 def generic_diffusion(
     swarm,
     random_hypothesis_function,
@@ -231,8 +232,7 @@ convenient and readable functions passive_diffusion,
 context_free_diffusion and context_sensitive_diffusion.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     if context_sensitive:
 
@@ -265,6 +265,7 @@ agent.\
         )
 
         yield
+
 def generic_single_agent_diffusion(
     agent,
     swarm,
@@ -276,9 +277,7 @@ def generic_single_agent_diffusion(
     active,
     rng=random,
 ):
-    """\
-Perform diffusion, and set the hypothesis for a single agent.\
-"""
+    "Perform diffusion, and set the hypothesis for a single agent."
     polled_agents = (
         rng.choice(swarm)
         for diffusion_num
@@ -321,6 +320,7 @@ Perform diffusion, and set the hypothesis for a single agent.\
     ):
         agent.active = False
         agent.hypothesis = random_hypothesis_function(rng)
+
 def passive_diffusion(
     swarm,
     random_hypothesis_function,
@@ -331,8 +331,7 @@ def passive_diffusion(
 Perform a passive diffusion phase.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     diffusion_phase = generic_diffusion(
         swarm,
@@ -347,6 +346,7 @@ agent.\
 
     for _ in diffusion_phase:
         yield
+
 def context_free_diffusion(
     swarm,
     random_hypothesis_function,
@@ -359,8 +359,7 @@ def context_free_diffusion(
 Perform a context free diffusion phase.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     diffusion_phase = generic_diffusion(
         swarm,
@@ -375,6 +374,7 @@ agent.\
 
     for _ in diffusion_phase:
         yield
+
 def context_sensitive_diffusion(
     swarm,
     random_hypothesis_function,
@@ -387,8 +387,7 @@ def context_sensitive_diffusion(
 Perform a context sensitive diffusion phase.
 
 This function returns a generator which must be consumed once for each
-agent.\
-"""
+agent."""
 
     diffusion_phase = generic_diffusion(
         swarm,
@@ -403,6 +402,7 @@ agent.\
 
     for _ in diffusion_phase:
         yield
+
 def synchronous_iterate(
     swarm,
     microtests,
@@ -419,8 +419,7 @@ Performs a synchronous iteration, one diffusion phase for all agents
 followed by one test phase for all agents.
 
 This function returns a generator which must be consumed once for each
-iteration.\
-"""
+iteration."""
 
     while True:
 
@@ -445,6 +444,7 @@ iteration.\
             pass
 
         yield
+
 def asynchronous_iterate(
     swarm,
     microtests,
@@ -461,8 +461,7 @@ Performs an asynchronous iteration, all agents are selected in a
 random order to perform one diffusion and one test in turn.
 
 This function returns a generator which must be consumed once for each
-iteration.\
-"""
+iteration."""
 
     while True:
 
@@ -490,6 +489,7 @@ iteration.\
             pass
 
         yield
+
 def parallel_iterate(
     swarm,
     microtests,
@@ -509,8 +509,7 @@ diffusion followed by a test) in parallel.
 
 This function returns a generator which simply waits a short time
 between yeilding, this can be used to ensure the parallel process
-runs for a certain amount of wall clock time.\
-"""
+runs for a certain amount of wall clock time."""
 
     context_free = diffusion_function is context_free_diffusion
 
@@ -561,6 +560,7 @@ runs for a certain amount of wall clock time.\
     while True:
         time.sleep(0.01)
         yield
+
 def update_state(
     agent,
     swarm,
@@ -579,8 +579,7 @@ def update_state(
 ):
     """\
 Repeatedly perform a diffusion and a test for an agent, with a short
-sleep. This function is a helper function to parallel_iterate.\
-"""
+sleep. This function is a helper function to parallel_iterate."""
     while True:
 
         generic_single_agent_diffusion(
@@ -608,13 +607,14 @@ sleep. This function is a helper function to parallel_iterate.\
         sleepy_time = min(2,max(0,rng.gauss(1,1)))
 
         time.sleep(sleepy_time)
+
 def never_halt(*args, **kwargs):
     """\
 Always returns false, suitable as a halting function for a perpetual
-SDS.\
-"""
+SDS."""
 
     return False
+
 def make_stability_halting_function(lower, region, time):
     """\
 Returns a function suitable for use as a halting function. Halts, by
@@ -626,8 +626,7 @@ region: Amount above lower which defines the upper bound of the
 stability window.
 
 time: Number of consecutive times this function must be called with
-arguments within the stability window before it will halt.\
-"""
+arguments within the stability window before it will halt."""
 
     def generator_front_end(activity_count, halt_generator):
         next(halt_generator)
@@ -664,12 +663,12 @@ arguments within the stability window before it will halt.\
     return functools.partial(
         generator_front_end,
         halt_generator=halting_generator,)
+
 def make_instant_threshold_halt_function(threshold):
     """\
 Returns a function suitable for use as a halting function. Halts, by
 returning True when the proportion of global activity is greater than
-threshold.\
-"""
+threshold."""
     def threshold_halt_function(swarm, threshold):
 
         activity = sum(1 for agent in swarm if agent.active)/len(swarm)
@@ -680,12 +679,12 @@ threshold.\
         threshold_halt_function,
         threshold=threshold,
     )
+
 def make_instant_strong_halting_function(threshold):
     """\
 Returns a function suitable for use as a halting function. Halts, by
 returning True when the proportion of activity at the largest cluster is
-greater than threshold.\
-"""
+greater than threshold."""
     def strong_halt_function(swarm, threshold):
 
         largest_cluster_activity = (
@@ -700,12 +699,12 @@ greater than threshold.\
         return activity > threshold
 
     return functools.partial(strong_halt_function, threshold=threshold)
+
 def make_threshold_time_halting_function(lower, time):
     """\
 Returns a function suitable for use as a halting function. Halts, by
 returning True when the proportion of global activity is greater than
-threshold for a number of calls to this function defined by time.\
-"""
+threshold for a number of calls to this function defined by time."""
 
     def generator_front_end(activity_count, halt_generator):
         next(halt_generator)
@@ -739,6 +738,7 @@ threshold for a number of calls to this function defined by time.\
     return functools.partial(
         generator_front_end,
         halt_generator=halting_generator,)
+
 def run(
     swarm,
     microtests,
@@ -807,8 +807,8 @@ clusters to include in the report.
 function to call once per iteration.
 :param multidiffusion: (Default: 1) The number of agents for a polling \
 agent to poll during the diffusion phase. May be an integer or a \
-float.\
-"""
+float."""
+
     if report_function is None:
 
         report_function = functools.partial(
@@ -857,6 +857,7 @@ float.\
         pass
 
     return count_clusters(swarm)
+
 def generic_handle_halting(
     iteration_num,
     swarm,
@@ -874,6 +875,7 @@ def generic_handle_halting(
             max_iterations and iteration_num >= max_iterations
         )
     )
+
 def basic_report(
     iteration_num,
     swarm,
@@ -897,6 +899,7 @@ def basic_report(
             in clusters.most_common(max_cluster_report)
         ),
     )
+
 def generic_handle_reporting(
     iteration_num,
     swarm,
@@ -909,6 +912,7 @@ def generic_handle_reporting(
         and iteration_num % report_iterations == 0
     ):
         print(report_function(iteration_num, swarm))
+
 def run_daemon(
     swarm,
     microtests,
@@ -934,8 +938,7 @@ q: Halt the SDS and kill the daemon.
 c: Print the largest clusters to the screen.
 w: Write the largest clusters to file.
 
-Anything else is printed to stdout.\
-"""
+Anything else is printed to stdout."""
 
     def write_status(swarm):
         with open(out_file_name,'w') as f:
@@ -1014,6 +1017,7 @@ Anything else is printed to stdout.\
     print('done run_daemon')
 
     return count_clusters(swarm)
+
 def coupled_diffusion(
     swarms,
     random,
@@ -1023,14 +1027,15 @@ def coupled_diffusion(
     """\
 Performs Coupled diffusion when passed a list of swarms, a list of
 random hypothesis functions and a list of diffusion functions. Not
-tested with the newest version of sds.run.\
-"""
+tested with the newest version of sds.run."""
+
     for swarm, diffusion_function, random_hypothesis_function in zip(
         swarms,
         diffusion_functions,
         random_hypothesis_functions
     ):
         diffusion_function(swarm, random, random_hypothesis_function)
+
 def generic_coupled_test_phase(
     master_swarm_num,
     swarms,
@@ -1044,8 +1049,7 @@ def generic_coupled_test_phase(
     """\
 Performs Coupled test when passed the index of a master swarm, a list
 of swarms, and a list of lists of microtests. Not tested with the
-latest version of sds.run.\
-"""
+latest version of sds.run."""
 
     if not multitesting == 1:
         raise NotImplementedError(
@@ -1085,7 +1089,7 @@ latest version of sds.run.\
         for agent in agents:
 
             agent.active = test_result
-# master/slave synchronisation
+
 def synchronous_coupled_test_phase(
     swarms,
     random,
@@ -1096,9 +1100,8 @@ def synchronous_coupled_test_phase(
     rng=random,
 ):
     """\
-Perform a Synchronous coupled test phase. Not tested with the latest
-version of sds.run.\
-"""
+Perform a Synchronous coupled test phase using master/slave
+synchronisation. Not tested with the latest version of sds.run."""
 
     master_swarm_num = 0
 
@@ -1112,6 +1115,7 @@ version of sds.run.\
         compare,
         rng,
     )
+
 def sequential_coupled_test_phase(
     swarms,
     random,
@@ -1123,8 +1127,7 @@ def sequential_coupled_test_phase(
 ):
     """\
 Perform a Sequential master coupled test phase. Not tested with the
-latest version of sds.run.\
-"""
+latest version of sds.run."""
 
     for master_swarm_num in range(len(swarms)):
 
@@ -1138,6 +1141,7 @@ latest version of sds.run.\
             compare,
             rng,
         )
+
 def iterate_coupled(
     swarms,
     random_hypothesis_functions,
@@ -1152,8 +1156,7 @@ def iterate_coupled(
 ):
     """\
 Perform an iteration of Coupled SDS. Not tested with the latest version
-of sds.run.\
-"""
+of sds.run."""
 
     coupled_diffusion(
         swarms,
@@ -1169,6 +1172,7 @@ of sds.run.\
         microtests,
         compare,
     )
+
 def run_coupled(
     swarms,
     random_hypothesis_functions,
@@ -1243,11 +1247,11 @@ Perform a Coupled SDS. Not tested with the latest version of sds.run.\
         pass
 
     return tuple(count_clusters(swarm) for swarm in swarms)
+
 def count_clusters(swarm):
     """\
 Returns the number of active agents at each hypothesis with at least one
-active agent as a collections.Counter.\
-"""
+active agent as a collections.Counter."""
 
     return collections.Counter(
         agent.hypothesis
@@ -1255,10 +1259,9 @@ active agent as a collections.Counter.\
         in swarm
         if agent.active
     )
+
 def write_swarm(swarm, outfile):
-    """\
-Writes a swarm to a file-like object.\
-"""
+    "Writes a swarm to a file-like object."
     json.dump(
         {
             'agent count':len(swarm),
@@ -1266,6 +1269,7 @@ Writes a swarm to a file-like object.\
         },
         outfile,
     )
+
 def activity(swarm):
     """\
 Return the proportion of the swarm which are active between 0 and 1.\
@@ -1276,6 +1280,7 @@ Return the proportion of the swarm which are active between 0 and 1.\
     active_count = sum(1 for agent in swarm if agent.active)
 
     return active_count/agent_count
+
 def estimate_noise(
     microtests,
     random_hypothesis_function,
@@ -1307,13 +1312,13 @@ Returns an estimate of the uniform background noise, between 0 and 1.\
         activities.append(activity(noise_swarm))
 
     return sum(activities)/iterations
+
 def swarm_from_clusters(agent_count, clusters):
     """\
 Returns a swarm suitable for use in functions like sds.run.
 
 Clusters should be a dictionary or collections.Counter of the
-hypotheses of active agents.\
-"""
+hypotheses of active agents."""
 
     active_agents = (
         (
@@ -1329,6 +1334,7 @@ hypotheses of active agents.\
     return (
         Agent.initialise(inactive_count)
         + list(itertools.chain.from_iterable(active_agents)))
+
 def pretty_print_with_values(
     clusters,
     search_space,
@@ -1347,6 +1353,7 @@ def pretty_print_with_values(
     ]
 
     return "\n".join(cluster_strings)
+
 def simulate(
     scores,
     max_iterations=1000,
