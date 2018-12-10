@@ -1,25 +1,25 @@
 from setuptools import setup
 
 setup(
-	name='sds',
-	version='0.2.0',
-	packages=['sds'],
-	description='Stochastic Diffusion Search',
-	keywords = ['swarm','artificial','intelligence','search'],
-	classifiers = [
-		'Development Status :: 4 - Beta',
-		'Intended Audience :: Developers',
-		'Intended Audience :: Science/Research',
-		'License :: OSI Approved :: Apache Software License',
-		'Operating System :: OS Independent',
-		'Programming Language :: Python :: 3',
-		'Programming Language :: Python',
-		'Topic :: Scientific/Engineering :: Artificial Intelligence',
-	],
-	url='http://www.aomartin.co.uk/sds-library/',
-	author='Andrew Owen Martin',
-	author_email='a.martin@gold.ac.uk',
-	long_description="""\
+    name='sds',
+    version='0.2.0',
+    packages=['sds'],
+    description='Stochastic Diffusion Search',
+    keywords = ['swarm','artificial','intelligence','search'],
+    classifiers = [
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    ],
+    url='http://www.aomartin.co.uk/sds-library/',
+    author='Andrew Owen Martin',
+    author_email='a.martin@gold.ac.uk',
+    long_description="""\
 A library which implements the main variants of Stochastic Diffusion
 Search (SDS), and provides a convenient front end.
 
