@@ -110,7 +110,7 @@ In the ``search_space`` of this example are four intances of four of the five le
         return rnd.randint(0,len(search_space)-len(model))
     
     def make_microtest(offset):
-    	return lambda hyp: search_space[hyp+offset] == model[offset]
+        return lambda hyp: search_space[hyp+offset] == model[offset]
     
     microtests = [
         make_microtest(offset) for offset in range(len(model))
@@ -119,13 +119,13 @@ In the ``search_space`` of this example are four intances of four of the five le
     swarm = sds.Agent.initialise(agent_count=1000)
     
     clusters = sds.run(
-    	swarm=swarm,
-    	microtests=microtests,
-    	random_hypothesis_function=random_hyp,
-    	max_iterations=300,
-    	diffusion_function=sds.passive_diffusion,
-    	rng=random.Random(),
-    	report_iterations=10,
+        swarm=swarm,
+        microtests=microtests,
+        random_hypothesis_function=random_hyp,
+        max_iterations=300,
+        diffusion_phase=sds.passive_diffusion,
+        rng=random.Random(),
+        report_iterations=10,
     )
     
     print(clusters.most_common())
