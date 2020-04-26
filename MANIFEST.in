@@ -1,4 +1,2 @@
-include doc/string_search.py
-include doc/tutorial.html
-include doc/tutorial.pdf
+include sds.pdf
 include LICENSE.txt

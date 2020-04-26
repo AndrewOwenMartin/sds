@@ -1,4 +1,12 @@
-dist
-sds.egg-info
-sds/__pycache__
-sphinxdoc/build
+repo
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.tex
+*.toc
+sds.pdf
+__pycache__/
+build/
+sds.egg-info/

@@ -1,0 +1,1218 @@
+\documentclass[11pt]{report}
+
+\usepackage{hyperref}
+\usepackage{noweb}
+\noweboptions{longxref,smallcode,alphasubpage,subscriptidents,subscriptquotedidents,longchunks}
+
+% Set up formatting to look more like a modern report than an old book.
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
+\usepackage[a4paper]{geometry}
+\usepackage{microtype}
+\usepackage[UKenglish]{isodate} % http://ctan.org/pkg/isodate
+\cleanlookdateon % Remove ordinal day reference
+\usepackage{mathpazo} % Nice font
+\usepackage{booktabs} % Nice tables
+
+\title{SDS Library}
+\author{Andrew Owen Martin}
+
+\pagestyle{noweb}
+
+\begin{document}
+\maketitle
+\setcounter{page}{2}
+\tableofcontents
+
+\chapter{Standard SDS}
+
+\section{SDS}
+<<sds>>=
+def `SDS(I, H):
+
+    while not H():
+
+        I()
+@
+
+\section{Agent}
+<<standard agent>>=
+class `Agent:
+    def __init__(self, active=False, hyp=None):
+        self.active = active
+        self.hyp = hyp
+
+    @property
+    def inactive(self):
+
+        return not self.active
+
+    @property
+    def clone(self):
+
+        return ReadOnlyAgent(active=self.active, hyp=self.hyp)
+
+    def __iter__(self):
+
+        yield ("active", self.active)
+        yield ("hyp", self.hyp)
+
+    def __str__(self):
+
+        if self.active:
+
+            return str(self.hyp)
+
+        else:
+
+            return "Inactive"
+@
+
+\subsection{Unit test}
+<<unit tests>>=
+def test_agent(self):
+    agent = sds.Agent()
+    self.assertIsNone(agent.hyp)
+    self.assertFalse(agent.active)
+    agent = sds.Agent(hyp="hello", active=True)
+    self.assertEqual(agent.hyp, "hello")
+    self.assertTrue(agent.active)
+@
+
+\section{Swarm}
+<<standard swarm>>=
+class `Swarm(collections.UserList):
+    def __init__(self, agent_count=None, swarm=None, AgentClass=Agent):
+
+        if swarm is None:
+
+            if agent_count is None:
+
+                raise ValueError("One of agent_count or swarm must be passed")
+
+            else:
+
+                self.data = [AgentClass() for _ in range(agent_count)]
+
+        else:
+
+            self.data = swarm
+
+    def __str__(self):
+
+        return ", ".join(
+            f"(Hyp:{hyp}, Agents:{cluster_size})"
+            for hyp, cluster_size in self.clusters.most_common()
+        )
+
+    @property
+    def activity(self):
+
+        if not self:
+
+            return 0
+
+        return sum(1 for agent in self if agent.active) / len(self)
+
+    @property
+    def clusters(self):
+
+        return collections.Counter(agent.hyp for agent in self if agent.active)
+
+    @property
+    def largest_cluster(self):
+
+        try:
+
+            hyp, agents = self.clusters.most_common(1)[0]
+
+        except IndexError:
+
+            hyp, agents = None, 0
+
+        return Cluster(hyp=hyp, agents=agents, size=agents / len(self))
+
+    def report_clusters(self, significant_hypotheses):
+
+        clusters = self.clusters
+
+        opt = tuple((hyp, clusters[hyp]) for hyp in significant_hypotheses)
+
+        active = sum(clusters.values())
+
+        inactive = len(self) - active
+
+        noise_active = active - sum(size for hyp, size in opt)
+
+        log.debug(
+            "Opt hyp: %s, active: %s, inactive: %s, noise active: %s",
+            opt,
+            active,
+            inactive,
+            noise_active,
+        )
+
+        return {
+            "opt-hyp": opt,
+            "active": active,
+            "inactive": inactive,
+            "noise active": noise_active,
+        }
+@
+
+<<standard imports>>=
+import collections
+@
+
+<<cluster>>=
+Cluster = collections.namedtuple("Cluster", ("hyp", "agents", "size"))
+@
+
+\section{Modes of iteration}
+
+\paragraph{Synchronous iteration}
+<<synchronous iteration>>=
+def `I_sync(D, T, swarm):
+    def I():
+
+        for agent in swarm:
+
+            D(agent)
+
+        for agent in swarm:
+
+            T(agent)
+
+    return I
+@
+
+\paragraph{Asynchronous iteration}
+
+Each agent in the swarm performs diffusion then testing.
+
+<<iteration variants>>=
+def `I_async(D, T, swarm):
+
+    def I_prime():
+
+        for agent in swarm:
+
+            D(agent)
+
+            T(agent)
+
+    return I_prime
+@
+
+
+\section{Modes of diffusion}
+
+\paragraph{Passive diffusion}
+<<passive diffusion>>=
+def `D_passive(DH, swarm, rng):
+    def D(agent):
+
+        if agent.inactive:
+
+            polled = rng.choice(swarm)
+
+            if polled.active:
+
+                agent.hyp = polled.hyp
+
+            else:
+
+                agent.hyp = DH()
+
+    return D
+@
+
+\paragraph{Context-free diffusion}
+<<diffusion variants>>=
+def `D_context_free(DH, swarm, rng):
+
+    def D(agent):
+
+        polled = rng.choice(swarm)
+
+        if agent.inactive or polled.active:
+
+            if agent.inactive and polled.active:
+
+                agent.hyp = polled.hyp
+
+            else:
+
+                agent.active = False
+
+                agent.hyp = DH()
+
+    return D
+@
+
+\paragraph{Context-sensitive diffusion}
+<<diffusion variants>>=
+def `D_context_sensitive(DH, swarm, rng):
+
+    def D(agent):
+
+        polled = rng.choice(swarm)
+
+        if polled.active and agent.inactive:
+
+            agent.hyp = polled.hyp
+
+        else:
+
+            if agent.inactive or polled.active and agent.hyp == polled.hyp:
+
+                agent.active = False
+
+                agent.hyp = DH()
+
+    return D
+@
+
+\paragraph{Multi-diffusion}
+<<diffusion variants>>=
+def `D_multidiffusion(rng, swarm, multidiffusion_amount, DH):
+    def D(agent):
+
+        if agent.inactive:
+
+            polled_agents = (rng.choice(swarm) for num in range(multidiffusion_amount))
+
+            active_agents = [agent for agent in polled_agents if agent.active]
+
+            if active_agents:
+
+                agent.hyp = rng.choice(active_agents).hyp
+
+            else:
+
+                agent.hyp = DH()
+
+    return D
+@
+
+\subsection{Diffusion with noisy hypothesis transmission}
+
+\paragraph{Noisy diffusion}
+<<diffusion variants>>=
+def `D_noise(swarm, DN, DH, rng):
+
+    def D(agent):
+
+        if agent.inactive:
+
+            polled = rng.choice(swarm)
+
+            if polled.active:
+
+                agent.hyp = DN(polled.hyp)
+
+            else:
+
+                agent.hyp = DH()
+
+    return D
+
+@
+
+\paragraph{Gaussian noise}
+<<diffusion noise functions>>=
+def `DN_gauss(mean, sigma, rng):
+    """ add noise from a gaussian distribution to hypothesis transmission """
+
+    def DN(hyp):
+
+        return hyp + rng.gauss(mean, sigma)
+
+    return DN
+@
+
+\paragraph{Normal distribution noise}
+<<diffusion noise functions>>=
+def `DN_normal(rng):
+    """ add noise from a normal gaussian distribution to hypothesis
+    transmission """
+
+    DN = DN_gauss(mean=0, sigma=1, rng=rng)
+
+    return DN
+@
+
+\section{Modes of hypothesis selection}
+
+\paragraph{Uniform random}
+<<uniform hypothesis selection>>=
+def `DH_uniform(hypotheses, rng):
+    """ uniformly random hypothesis generation """
+
+    def DH():
+
+        return rng.choice(hypotheses)
+
+    return DH
+@
+
+\paragraph{Uniform continuous random}
+<<hypothesis selection variants>>=
+def `DH_continuous(min_hyp, max_hyp, rng):
+
+    def DH():
+
+        return rng.uniform(min_hyp, max_hyp)
+
+    return DH
+@
+
+
+\section{Modes of testing}
+
+\paragraph{Boolean}
+<<testing variants>>=
+def `T_boolean(TM):
+    """ Boolean testing """
+
+    def T(agent):
+
+        microtest = TM()
+
+        agent.active = microtest(agent.hyp)
+
+    return T
+@
+
+\paragraph{Comparative}
+
+Each agent performs a random microtest against its own hypothesis and the hypothesis of a randomly selected agent, they become active if their hypothesis returned a higher value than the hypothesis of the polled agent.
+
+<<testing variants>>=
+def `T_comparative(TM, swarm, rng):
+
+    def T_prime(agent):
+
+        microtest = TM()
+
+        agent_partial_evaluation = microtest(agent.hyp)
+
+        polled = rng.choice(swarm)
+
+        polled_partial_evaluation = microtest(polled.hyp)
+
+        agent.active = agent_partial_evaluation > polled_partial_evaluation
+
+    return T_prime
+@
+
+\paragraph{Multi-testing}
+<<testing variants>>=
+def `TM_multitesting(microtests, rng, multitesting_amount, combinator):
+
+    def TM():
+
+        microtest_sample = iter(
+            rng.choice(microtests) for num in range(multitesting_amount)
+        )
+
+        def multi_test(hyp):
+
+            return combinator(microtest(hyp) for microtest in microtest_sample)
+
+        return multi_test
+
+    return TM
+@
+
+\section{Modes of microtest selection}
+
+\paragraph{Uniform random}
+<<uniform microtest selection>>=
+def `TM_uniform(microtests, rng):
+    """ uniform microtest selection """
+
+    def TM():
+
+        return rng.choice(microtests)
+
+    return TM
+@
+
+\section{Modes of halting}
+
+\paragraph{Fixed iteration}
+<<fixed iteration halting>>=
+def `H_fixed(iterations):
+    """ makes a function for halting after a fixed number of iterations """
+
+    iteration_count = 0
+
+    def H():
+
+        nonlocal iteration_count
+
+        iteration_count += 1
+
+        if iteration_count > iterations:
+
+            log.log(logging.DEBUG, "h_fixed(%s) halting", iterations)
+
+            return True
+
+        else:
+
+            return False
+
+    return H
+@
+
+\paragraph{Fixed time}
+<<iteration variants>>=
+def `H_time(duration):
+
+    start = None
+
+    def H():
+
+        nonlocal start
+
+        if start is None:
+
+            start = datetime.datetime.now()
+
+        return (now - start) > duration
+
+    return H
+@
+
+\paragraph{Global activity}
+<<halting variants>>=
+def `H_threshold(swarm, threshold):
+    """ makes a function for halting once the global activity is over a fixed
+    threshold """
+
+    def H():
+
+        activity = swarm.activity
+        # return activity > threshold
+        if activity > threshold:
+            log.log(
+                SILENT, f"Threshold activity {activity} > threshold {threshold}. halt!"
+            )
+            return True
+        else:
+            log.log(
+                SILENT,
+                "Threshold activity {activity} < threshold {threshold}. not halting",
+            )
+            return False
+
+    return H
+@
+
+\paragraph{Largest cluster}
+<<halting variants>>=
+def `H_largest_cluster_threshold(swarm, threshold):
+    """ makes a function for halting once the largest cluster activity is over
+    a fixed threshold """
+
+    def H():
+
+        return swarm.largest_cluster.size >= threshold
+
+    return H
+@
+
+\paragraph{Unique hypothesis count}
+<<halting variants>>=
+def `H_unique_hyp_count(swarm, unique_threshold):
+    def H():
+
+        unique_hyps = len(swarm.clusters)
+
+        return unique_hyps < unique_threshold
+
+    return H
+@
+
+\paragraph{Elite cluster consensus}
+<<halting variants>>=
+def `H_elite_cluster_consensus(swarm, elite_count, rng):
+
+    elite_agents = rng.sample(swarm, elite_count)
+
+    def H():
+
+        elite_agent_gen = (agent for agent in swarm if agent in elite_agents)
+
+        first_elite_agent = next(elite_agent_gen)
+
+        elite_hyp = first_elite_agent.hyp
+
+        return first_elite_agent.active and all(
+            elite_agent.active and elite_agent.hyp == elite_hyp
+            for elite_agent in elite_agent_gen
+        )
+
+    return H
+@
+
+\paragraph{Global activity stability}
+<<halting variants>>=
+def `H_stable(swarm, max_memory_length, stability_threshold, min_stable_iterations):
+
+    memory = collections.deque(maxlen=max_memory_length)
+
+    stable_iterations = 0
+
+    def H():
+
+        nonlocal stable_iterations
+
+        activity = swarm.activity
+
+        memory.append(activity)
+
+        mean_activity = sum(memory) / len(memory)
+
+        deviations = [activity - mean_activity for activity in memory]
+
+        sum_of_squared_deviations = sum(pow(deviation, 2) for deviation in deviations)
+
+        standard_deviation = math.sqrt(sum_of_squared_deviations / len(memory))
+
+        if standard_deviation > stability_threshold:
+
+            stable_iterations = 0
+
+            return False
+
+        stable_iterations += 1
+
+        is_stable = (stable_iterations >= min_stable_iterations)
+
+        return is_stable
+
+    return H
+@
+
+\paragraph{Weak halting criterion}
+<<halting variants>>=
+def `H_weak(swarm, threshold_activity, stability_threshold, min_stable_iterations):
+
+    stable_iterations = 0
+
+    if not (
+        ((2 * stability_threshold) < 1)
+        and ((stability_threshold + threshold_activity) <= 1)
+        and (threshold_activity - stability_threshold >= 0)
+    ):
+
+        raise ValueError("not valid values")
+
+    def H():
+
+        nonlocal stable_iterations
+
+        activity = swarm.activity
+
+        stability = abs(activity - threshold_activity)
+
+        if stability < stability_threshold:
+
+            stable_iterations += 1
+
+        else:
+
+            stable_iterations = 0
+
+        return stable_iterations > min_stable_iterations
+
+    return H
+@
+
+\paragraph{Strong halting criterion}
+<<halting variants>>=
+def `H_strong(
+    swarm, threshold_cluster_size, stability_threshold, min_stable_iterations  # a  # b
+):
+
+    stable_iterations = 0
+
+    swarm_size = len(swarm)
+
+    if not (
+        ((2 * stability_threshold) < swarm_size)
+        and ((stability_threshold + threshold_cluster_size) <= swarm_size)
+        and (threshold_cluster_size - stability_threshold >= 0)
+    ):
+
+        raise ValueError(
+            (
+                f"not valid values. "
+                f"((2 * stability_threshold) < 1) {((2 * stability_threshold) < 1)}, "
+                f"((stability_threshold + threshold_cluster_size) <= 1) {((stability_threshold + threshold_cluster_size) <= 1)}, "
+                f"(threshold_cluster_size - stability_threshold >= 0) {(threshold_cluster_size - stability_threshold >= 0)}."
+            )
+        )
+
+    def H():
+
+        nonlocal stable_iterations
+
+        cluster_size = swarm.largest_cluster.agents
+
+        stability = abs(cluster_size - threshold_cluster_size)
+
+        if stability < stability_threshold:
+
+            stable_iterations += 1
+
+        else:
+
+            stable_iterations = 0
+
+        return stable_iterations > min_stable_iterations
+
+    return H
+@
+
+\subsection{Halting combinators}
+
+\paragraph{All functions}
+<<halting combinators>>=
+def `all_functions(*function_list):
+    def F():
+
+        results = [function() for function in function_list]
+
+        log.log(SILENT, "all functions %s", results)
+
+        return all(results)
+
+    return F
+@
+
+\paragraph{Any functions}
+<<halting combinators>>=
+def `any_functions(*function_list):
+    def F():
+
+        results = [function() for function in function_list]
+
+        log.log(SILENT, "any functions %s", results)
+
+        return any(results)
+
+    return F
+@
+
+\section{Modes of extraction}
+
+\paragraph{Rounded clusters}
+<<extraction functions>>=
+def `round_clusters(clusters):
+
+    rounded_clusters = collections.Counter()
+
+    for hyp, size in clusters.items():
+
+        rounded_clusters[round(hyp)] += size
+
+    return rounded_clusters
+@
+
+\chapter{Reducing SDS}
+
+\paragraph{Confirmation reducing diffusion}
+
+<<reducing diffusion>>=
+def `D_confirmation(swarm, removed_clusters, DH, rng):
+
+    non_removed_agents = [agent for agent in swarm if not agent.removed]
+
+    def D(agent):
+
+        if agent.removed:
+
+            return
+
+        polled = rng.choice(non_removed_agents)
+
+        if agent.active:
+
+            if polled.active and agent.hyp == polled.hyp:
+
+                agent.terminating = True
+
+        else:
+
+            if polled.active:
+
+                if polled.terminating:
+
+                    agent.remove(final_hyp=polled.hyp)
+                    non_removed_agents.remove(agent)
+
+                    removed_clusters[polled.hyp] += 1
+
+                else:
+
+                    agent.hyp = polled.hyp
+
+            else:
+
+                agent.hyp = DH()
+
+    return D
+@
+
+\paragraph{Independent reducing diffusion}
+<<reducing diffusion>>=
+def `D_independent(swarm, removed_clusters, DH, rng):
+
+    remaining_swarm = [agent for agent in swarm if not agent.removed]
+
+    swarm_is_empty = False
+
+    def D(agent):
+
+        nonlocal swarm_is_empty
+
+        if agent.removed or swarm_is_empty:
+
+            return
+
+        while True:
+
+            polled = rng.choice(remaining_swarm)
+
+            if polled is not agent:
+
+                break
+
+        if agent.inactive and polled.inactive:
+
+            agent.hyp = DH()
+            polled.hyp = DH()
+
+        elif agent.active and (not agent.terminating) and polled.inactive:
+
+            polled.hyp = agent.hyp
+
+        elif polled.active and (not polled.terminating) and agent.inactive:
+
+            agent.hyp = polled.hyp
+
+        elif agent.terminating and not polled.terminating:
+
+            polled.remove(final_hyp=agent.hyp)
+            remaining_swarm.remove(polled)
+            swarm_is_empty = len(remaining_swarm) < 2
+
+            removed_clusters[agent.hyp] += 1
+
+        elif polled.terminating and not agent.terminating:
+
+            agent.remove(final_hyp=polled.hyp)
+            remaining_swarm.remove(agent)
+            swarm_is_empty = len(remaining_swarm) < 2
+
+            removed_clusters[polled.hyp] += 1
+
+        elif agent.terminating and polled.terminating:
+
+            both_agents = [agent, polled]
+            rng.shuffle(both_agents)
+            removed, removing = both_agents
+
+            removed.remove(final_hyp=removing.hyp)
+            remaining_swarm.remove(removed)
+            swarm_is_empty = len(remaining_swarm) < 2
+
+            removed_clusters[removing.hyp] += 1
+
+        elif agent.hyp == polled.hyp:
+
+            agent.terminating = polled.terminating = True
+
+    return D
+@
+
+\paragraph{Running mean diffusion}
+<<reducing diffusion>>=
+def `D_running_mean(DH, quorum_threshold, min_interaction_count, activities, swarm, rng):
+
+    non_removed_agents = [agent for agent in swarm if not agent.removed]
+
+    swarm_is_empty = False
+
+    def D(agent):
+
+        nonlocal swarm_is_empty
+
+
+        if agent.removed or swarm_is_empty:
+
+            return
+
+        polled = rng.choice(non_removed_agents)
+
+        if agent.inactive:
+
+            agent.memory.clear()
+
+            if polled.active:
+
+                agent.hyp = polled.hyp
+
+            else:
+
+                agent.hyp = DH()
+
+        else:  # agent is active
+
+            if agent.terminating:
+
+                if not (agent.hyp == polled.hyp):
+
+                    polled.remove(final_hyp=agent.hyp)
+                    non_removed_agents.remove(polled)
+                    swarm_is_empty = len(non_removed_agents) < 2
+
+            else:  # agent has not sensed quorum
+
+                activity_at_hypothesis = activities[agent.hyp]/len(non_removed_agents)
+
+                agent.memory.append(activity_at_hypothesis)
+
+                interaction_count = len(agent.memory)
+
+                # confidence is 0 if interaction_count < min_iteration_count
+                confidence = (
+                    interaction_count >= min_interaction_count
+                    and (sum(agent.memory) / interaction_count)
+                )
+
+                if confidence >= quorum_threshold:
+                    # agent has sensed quorum
+
+                    agent.terminating = True
+
+    return D
+@
+
+\paragraph{Quorum sensing diffusion}
+<<reducing diffusion>>=
+def `D_qs(DH, quorum_threshold, decay, swarm, rng):
+
+    non_removed_agents = [agent for agent in swarm if not agent.removed]
+
+    swarm_is_empty = False
+
+    def D(agent):
+
+        nonlocal swarm_is_empty
+
+        if agent.removed or swarm_is_empty:
+
+            return
+
+        polled = rng.choice(non_removed_agents)
+
+        if agent.inactive:
+
+            agent.confidence = 0
+
+            if polled.active:
+
+                agent.hyp = polled.hyp
+
+            else:
+
+                agent.hyp = DH()
+
+        else:  # agent is active
+
+            if agent.terminating:
+
+                if not (agent.hyp == polled.hyp):
+
+                    polled.remove(final_hyp=agent.hyp)
+                    non_removed_agents.remove(polled)
+                    swarm_is_empty = len(non_removed_agents) < 2
+
+            else:  # agent has not sensed quorum
+
+                if polled.active and (agent.hyp == polled.hyp):
+
+                    agent.confidence += 1
+
+                agent.confidence *= decay
+
+                if agent.confidence >= quorum_threshold:  # agent has sensed quorum
+
+                    agent.terminating = True
+
+    return D
+@
+
+\subsection{Agent and Swarm subclasses}
+
+\paragraph{Reducing agent}
+<<reducing agent>>=
+class `ReducingAgent(sds.Agent):
+    def __init__(self, active=False, hyp=None, terminating=False, removed=False):
+        super().__init__(active=active, hyp=hyp)
+        self.terminating = terminating
+        self.removed = removed
+
+    def remove(self, final_hyp):
+
+        self.removed = True
+        self.hyp = final_hyp
+        self.active = False
+        self.terminating = False
+
+    def __str__(self):
+
+        s = super().__str__()
+
+        if self.terminating:
+
+            s = f"{s} Terminating"
+
+        elif self.removed:
+
+            s = f"{self.hyp} Removed"
+
+        return s
+
+    def __iter__(self):
+
+        yield from super().__iter__()
+        yield ("terminating", self.terminating)
+        yield ("removed", self.removed)
+@
+
+<<reducing imports>>=
+import sds.standard
+@
+
+\paragraph{Quorum sensing agent}
+<<reducing agent>>=
+class `QSAgent(ReducingAgent):
+    def __init__(
+        self, active=False, hyp=None, terminating=False, removed=False, confidence=0
+    ):
+        super().__init__(
+            active=active, hyp=hyp, terminating=terminating, removed=removed
+        )
+        self.confidence = confidence
+
+    def __str__(self):
+
+        s = super().__str__()
+
+        if self.active:
+
+            s = f"{s} Confidence: {self.confidence:2.2g}"
+
+        return s
+
+    def __iter__(self):
+
+        yield from super().__iter__(self)
+        yield ("confidence", self.confidence)
+@
+
+\paragraph{Running mean agent}
+<<reducing agent>>=
+class `QSRunningMeanAgent(ReducingAgent):
+    def __init__(self, active, hyp, terminating, removed, memory):
+
+        super().__init__(
+            active=active, hyp=hyp, terminating=terminating, removed=removed
+        )
+
+        self.memory = memory
+
+    def new(memory_length):
+
+        return QSRunningMeanAgent(
+            active=False,
+            hyp=None,
+            terminating=False,
+            removed=False,
+            memory=collections.deque(maxlen=memory_length),
+        )
+
+    def __str__(self):
+
+        s = super().__str__()
+
+        if self.active:
+
+            memory_str = ", ".join(format(avg, ".2g") for avg in self.memory)
+
+            s = f"{s} Confidence: [{memory_str}]"
+
+        return s
+
+    def __iter__(self):
+
+        yield from super().__iter__(self)
+        yield ("memory", self.memory)
+@
+
+\paragraph{Reducing swarm}
+<<reducing swarm>>=
+class `ReducingSwarm(sds.standard.Swarm):
+    @property
+    def clusters(self):
+
+        return collections.Counter(
+            agent.hyp for agent in self if agent.active or agent.removed
+        )
+
+    @property
+    def size(self):
+
+        return len(self) - len(self.removed)
+
+    @property
+    def removed(self):
+
+        return [agent for agent in self if agent.removed]
+@
+
+\paragraph{Reducing halting}
+<<reducing halting>>=
+def `H_all_terminating(swarm):
+    def H():
+
+        halt = all(agent.terminating for agent in swarm if not agent.removed)
+
+        return halt
+
+    return H
+@
+
+<<reducing halting>>=
+def `H_empty_swarm(swarm):
+    def H():
+        return all(agent.removed for agent in swarm)
+
+    return H
+@
+
+<<reducing halting>>=
+def `H_reducing(swarm):
+
+    is_empty = H_empty_swarm(swarm)
+    is_all_terminating = H_all_terminating(swarm)
+
+    return halting_methods.any_functions(is_empty, is_all_terminating)
+@
+
+\paragraph{Reducing testing}
+<<reducing testing>>=
+def `T_reducing(TM):
+
+    T_inner = sds.standard.T_boolean(TM=TM)
+
+    def T(agent):
+
+        if not (agent.terminating or agent.removed):
+
+            T_inner(agent)
+
+    return T
+@
+
+
+\appendix{}
+\chapter{Files}
+
+\section{[[standard.py]]}
+<<standard.py>>=
+<<standard imports>>
+import logging
+<<init logging>>
+<<standard agent>>
+<<standard swarm>>
+<<cluster>>
+<<sds>>
+<<synchronous iteration>>
+<<passive diffusion>>
+<<uniform hypothesis selection>>
+<<uniform microtest selection>>
+<<fixed iteration halting>>
+@
+
+\section{[[variants.py]]}
+<<variants.py>>=
+<<iteration variants>>
+<<diffusion variants>>
+<<diffusion noise functions>>
+<<hypothesis selection variants>>
+<<testing variants>>
+<<halting variants>>
+<<halting combinators>>
+<<extraction functions>>
+@
+
+\section{[[reducing.py]]}
+<<reducing.py>>=
+<<reducing imports>>
+import logging
+<<init logging>>
+<<reducing diffusion>>
+<<reducing agent>>
+<<reducing swarm>>
+<<reducing halting>>
+<<reducing testing>>
+@
+
+\section{[[__init__.py]]}
+<<--init--.py>>=
+from sds.standard import Agent, Swarm, D_passive, DH_uniform, H_fixed, I_sync, SDS, TM_uniform
+__all__ = ["Swarm", "Agent", "D_passive", "DH_uniform", "H_fixed", "I_sync", "SDS", "TM_uniform"]
+@
+
+\section{[[test-sds.py]]}
+<<test-sds.py>>=
+<<test imports>>
+class TestSDS(unittest.TestCase):
+    def setUp(self):
+        logging.basicConfig(level=logging.INFO)
+        self.log = logging.getLogger(__file__)
+    <<unit tests>>
+@
+
+<<init logging>>=
+log = logging.getLogger(__name__)
+@
+
+<<test imports>>=
+import unittest
+import sds
+import sds.standard
+import sds.reducing
+import sds.variants
+import logging
+@
+
+\chapter{Indices}
+\section{Index}
+
+\nowebindex{}
+
+\section{Code Chunks}
+
+\nowebchunks{}
+
+\end{document}
+
