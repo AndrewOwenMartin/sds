@@ -1,6 +1,9 @@
 import sds.standard
 import logging
+
 log = logging.getLogger(__name__)
+
+
 def D_confirmation(swarm, removed_clusters, DH, rng):
 
     non_removed_agents = [agent for agent in swarm if not agent.removed]
@@ -39,6 +42,8 @@ def D_confirmation(swarm, removed_clusters, DH, rng):
                 agent.hyp = DH()
 
     return D
+
+
 def D_independent(swarm, removed_clusters, DH, rng):
 
     remaining_swarm = [agent for agent in swarm if not agent.removed]
@@ -107,6 +112,8 @@ def D_independent(swarm, removed_clusters, DH, rng):
             agent.terminating = polled.terminating = True
 
     return D
+
+
 def D_running_mean(DH, quorum_threshold, min_interaction_count, activities, swarm, rng):
 
     non_removed_agents = [agent for agent in swarm if not agent.removed]
@@ -116,7 +123,6 @@ def D_running_mean(DH, quorum_threshold, min_interaction_count, activities, swar
     def D(agent):
 
         nonlocal swarm_is_empty
-
 
         if agent.removed or swarm_is_empty:
 
@@ -148,16 +154,15 @@ def D_running_mean(DH, quorum_threshold, min_interaction_count, activities, swar
 
             else:  # agent has not sensed quorum
 
-                activity_at_hypothesis = activities[agent.hyp]/len(non_removed_agents)
+                activity_at_hypothesis = activities[agent.hyp] / len(non_removed_agents)
 
                 agent.memory.append(activity_at_hypothesis)
 
                 interaction_count = len(agent.memory)
 
                 # confidence is 0 if interaction_count < min_iteration_count
-                confidence = (
-                    interaction_count >= min_interaction_count
-                    and (sum(agent.memory) / interaction_count)
+                confidence = interaction_count >= min_interaction_count and (
+                    sum(agent.memory) / interaction_count
                 )
 
                 if confidence >= quorum_threshold:
@@ -166,6 +171,8 @@ def D_running_mean(DH, quorum_threshold, min_interaction_count, activities, swar
                     agent.terminating = True
 
     return D
+
+
 def D_qs(DH, quorum_threshold, decay, swarm, rng):
 
     non_removed_agents = [agent for agent in swarm if not agent.removed]
@@ -217,6 +224,8 @@ def D_qs(DH, quorum_threshold, decay, swarm, rng):
                     agent.terminating = True
 
     return D
+
+
 class ReducingAgent(sds.Agent):
     def __init__(self, active=False, hyp=None, terminating=False, removed=False):
         super().__init__(active=active, hyp=hyp)
@@ -249,6 +258,8 @@ class ReducingAgent(sds.Agent):
         yield from super().__iter__()
         yield ("terminating", self.terminating)
         yield ("removed", self.removed)
+
+
 class QSAgent(ReducingAgent):
     def __init__(
         self, active=False, hyp=None, terminating=False, removed=False, confidence=0
@@ -272,6 +283,8 @@ class QSAgent(ReducingAgent):
 
         yield from super().__iter__(self)
         yield ("confidence", self.confidence)
+
+
 class QSRunningMeanAgent(ReducingAgent):
     def __init__(self, active, hyp, terminating, removed, memory):
 
@@ -307,6 +320,8 @@ class QSRunningMeanAgent(ReducingAgent):
 
         yield from super().__iter__(self)
         yield ("memory", self.memory)
+
+
 class ReducingSwarm(sds.standard.Swarm):
     @property
     def clusters(self):
@@ -324,6 +339,8 @@ class ReducingSwarm(sds.standard.Swarm):
     def removed(self):
 
         return [agent for agent in self if agent.removed]
+
+
 def H_all_terminating(swarm):
     def H():
 
@@ -332,17 +349,23 @@ def H_all_terminating(swarm):
         return halt
 
     return H
+
+
 def H_empty_swarm(swarm):
     def H():
         return all(agent.removed for agent in swarm)
 
     return H
+
+
 def H_reducing(swarm):
 
     is_empty = H_empty_swarm(swarm)
     is_all_terminating = H_all_terminating(swarm)
 
     return halting_methods.any_functions(is_empty, is_all_terminating)
+
+
 def T_reducing(TM):
 
     T_inner = sds.standard.T_boolean(TM=TM)

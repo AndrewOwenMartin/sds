@@ -372,7 +372,7 @@ def `DH_continuous(min_hyp, max_hyp, rng):
 \section{Modes of testing}
 
 \paragraph{Boolean}
-<<testing variants>>=
+<<boolean testing>>=
 def `T_boolean(TM):
     """ Boolean testing """
 
@@ -1150,6 +1150,7 @@ import logging
 <<uniform hypothesis selection>>
 <<uniform microtest selection>>
 <<fixed iteration halting>>
+<<boolean testing>>
 @
 
 \section{[[variants.py]]}
@@ -1178,8 +1179,28 @@ import logging
 
 \section{[[__init__.py]]}
 <<--init--.py>>=
-from sds.standard import Agent, Swarm, D_passive, DH_uniform, H_fixed, I_sync, SDS, TM_uniform
-__all__ = ["Swarm", "Agent", "D_passive", "DH_uniform", "H_fixed", "I_sync", "SDS", "TM_uniform"]
+from sds.standard import (
+    Agent,
+    D_passive,
+    DH_uniform,
+    H_fixed,
+    I_sync,
+    SDS,
+    Swarm,
+    T_boolean,
+    TM_uniform,
+)
+__all__ = [
+    "Agent",
+    "D_passive",
+    "DH_uniform",
+    "H_fixed",
+    "I_sync",
+    "SDS",
+    "Swarm",
+    "T_boolean",
+    "TM_uniform",
+]
 @
 
 \section{[[test-sds.py]]}

@@ -5,7 +5,7 @@ project_name = sds
 library_dir = sds
 junk = *.toc *.log *.fls *.aux *.pdf *.tex *.fdb_latexmk *.out
 
-all: $(project_name).pdf build
+all: $(project_name).pdf build sdist
 
 COLS := $(shell tput cols)
 
@@ -30,6 +30,7 @@ project_files = \
 	test_sds.py
 
 build: $(project_files)
+	black sds
 
 server:
 	when-changed -1 *.nw -c "max_print_line=$(COLS) make build && make doc && date"

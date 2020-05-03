@@ -1,5 +1,4 @@
 def I_async(D, T, swarm):
-
     def I_prime():
 
         for agent in swarm:
@@ -9,6 +8,8 @@ def I_async(D, T, swarm):
             T(agent)
 
     return I_prime
+
+
 def H_time(duration):
 
     start = None
@@ -24,8 +25,9 @@ def H_time(duration):
         return (now - start) > duration
 
     return H
-def D_context_free(DH, swarm, rng):
 
+
+def D_context_free(DH, swarm, rng):
     def D(agent):
 
         polled = rng.choice(swarm)
@@ -43,8 +45,9 @@ def D_context_free(DH, swarm, rng):
                 agent.hyp = DH()
 
     return D
-def D_context_sensitive(DH, swarm, rng):
 
+
+def D_context_sensitive(DH, swarm, rng):
     def D(agent):
 
         polled = rng.choice(swarm)
@@ -62,6 +65,8 @@ def D_context_sensitive(DH, swarm, rng):
                 agent.hyp = DH()
 
     return D
+
+
 def D_multidiffusion(rng, swarm, multidiffusion_amount, DH):
     def D(agent):
 
@@ -80,8 +85,9 @@ def D_multidiffusion(rng, swarm, multidiffusion_amount, DH):
                 agent.hyp = DH()
 
     return D
-def D_noise(swarm, DN, DH, rng):
 
+
+def D_noise(swarm, DN, DH, rng):
     def D(agent):
 
         if agent.inactive:
@@ -98,6 +104,7 @@ def D_noise(swarm, DN, DH, rng):
 
     return D
 
+
 def DN_gauss(mean, sigma, rng):
     """ add noise from a gaussian distribution to hypothesis transmission """
 
@@ -106,6 +113,8 @@ def DN_gauss(mean, sigma, rng):
         return hyp + rng.gauss(mean, sigma)
 
     return DN
+
+
 def DN_normal(rng):
     """ add noise from a normal gaussian distribution to hypothesis
     transmission """
@@ -113,15 +122,17 @@ def DN_normal(rng):
     DN = DN_gauss(mean=0, sigma=1, rng=rng)
 
     return DN
-def DH_continuous(min_hyp, max_hyp, rng):
 
+
+def DH_continuous(min_hyp, max_hyp, rng):
     def DH():
 
         return rng.uniform(min_hyp, max_hyp)
 
     return DH
-def T_comparative(TM, swarm, rng):
 
+
+def T_comparative(TM, swarm, rng):
     def T_prime(agent):
 
         microtest = TM()
@@ -135,8 +146,9 @@ def T_comparative(TM, swarm, rng):
         agent.active = agent_partial_evaluation > polled_partial_evaluation
 
     return T_prime
-def TM_multitesting(microtests, rng, multitesting_amount, combinator):
 
+
+def TM_multitesting(microtests, rng, multitesting_amount, combinator):
     def TM():
 
         microtest_sample = iter(
@@ -150,6 +162,8 @@ def TM_multitesting(microtests, rng, multitesting_amount, combinator):
         return multi_test
 
     return TM
+
+
 def H_threshold(swarm, threshold):
     """ makes a function for halting once the global activity is over a fixed
     threshold """
@@ -171,6 +185,8 @@ def H_threshold(swarm, threshold):
             return False
 
     return H
+
+
 def H_largest_cluster_threshold(swarm, threshold):
     """ makes a function for halting once the largest cluster activity is over
     a fixed threshold """
@@ -180,6 +196,8 @@ def H_largest_cluster_threshold(swarm, threshold):
         return swarm.largest_cluster.size >= threshold
 
     return H
+
+
 def H_unique_hyp_count(swarm, unique_threshold):
     def H():
 
@@ -188,6 +206,8 @@ def H_unique_hyp_count(swarm, unique_threshold):
         return unique_hyps < unique_threshold
 
     return H
+
+
 def H_elite_cluster_consensus(swarm, elite_count, rng):
 
     elite_agents = rng.sample(swarm, elite_count)
@@ -206,6 +226,8 @@ def H_elite_cluster_consensus(swarm, elite_count, rng):
         )
 
     return H
+
+
 def H_stable(swarm, max_memory_length, stability_threshold, min_stable_iterations):
 
     memory = collections.deque(maxlen=max_memory_length)
@@ -236,11 +258,13 @@ def H_stable(swarm, max_memory_length, stability_threshold, min_stable_iteration
 
         stable_iterations += 1
 
-        is_stable = (stable_iterations >= min_stable_iterations)
+        is_stable = stable_iterations >= min_stable_iterations
 
         return is_stable
 
     return H
+
+
 def H_weak(swarm, threshold_activity, stability_threshold, min_stable_iterations):
 
     stable_iterations = 0
@@ -272,6 +296,8 @@ def H_weak(swarm, threshold_activity, stability_threshold, min_stable_iterations
         return stable_iterations > min_stable_iterations
 
     return H
+
+
 def H_strong(
     swarm, threshold_cluster_size, stability_threshold, min_stable_iterations  # a  # b
 ):
@@ -314,6 +340,8 @@ def H_strong(
         return stable_iterations > min_stable_iterations
 
     return H
+
+
 def all_functions(*function_list):
     def F():
 
@@ -324,6 +352,8 @@ def all_functions(*function_list):
         return all(results)
 
     return F
+
+
 def any_functions(*function_list):
     def F():
 
@@ -334,6 +364,8 @@ def any_functions(*function_list):
         return any(results)
 
     return F
+
+
 def round_clusters(clusters):
 
     rounded_clusters = collections.Counter()

@@ -1,6 +1,9 @@
 import collections
 import logging
+
 log = logging.getLogger(__name__)
+
+
 class Agent:
     def __init__(self, active=False, hyp=None):
         self.active = active
@@ -30,6 +33,8 @@ class Agent:
         else:
 
             return "Inactive"
+
+
 class Swarm(collections.UserList):
     def __init__(self, agent_count=None, swarm=None, AgentClass=Agent):
 
@@ -107,12 +112,18 @@ class Swarm(collections.UserList):
             "inactive": inactive,
             "noise active": noise_active,
         }
+
+
 Cluster = collections.namedtuple("Cluster", ("hyp", "agents", "size"))
+
+
 def SDS(I, H):
 
     while not H():
 
         I()
+
+
 def I_sync(D, T, swarm):
     def I():
 
@@ -125,6 +136,8 @@ def I_sync(D, T, swarm):
             T(agent)
 
     return I
+
+
 def D_passive(DH, swarm, rng):
     def D(agent):
 
@@ -141,6 +154,8 @@ def D_passive(DH, swarm, rng):
                 agent.hyp = DH()
 
     return D
+
+
 def DH_uniform(hypotheses, rng):
     """ uniformly random hypothesis generation """
 
@@ -149,16 +164,8 @@ def DH_uniform(hypotheses, rng):
         return rng.choice(hypotheses)
 
     return DH
-def T_boolean(TM):
-    """ Boolean testing """
 
-    def T(agent):
 
-        microtest = TM()
-
-        agent.active = microtest(agent.hyp)
-
-    return T
 def TM_uniform(microtests, rng):
     """ uniform microtest selection """
 
@@ -167,6 +174,8 @@ def TM_uniform(microtests, rng):
         return rng.choice(microtests)
 
     return TM
+
+
 def H_fixed(iterations):
     """ makes a function for halting after a fixed number of iterations """
 
@@ -189,3 +198,15 @@ def H_fixed(iterations):
             return False
 
     return H
+
+
+def T_boolean(TM):
+    """ Boolean testing """
+
+    def T(agent):
+
+        microtest = TM()
+
+        agent.active = microtest(agent.hyp)
+
+    return T
