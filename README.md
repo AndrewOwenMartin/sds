@@ -98,7 +98,7 @@ H = sds.H_fixed(iterations=max_iterations)
 
 These features are defined in the [Formalism of SDS](doc/formalism.md)
 
-You can now run `sds.SDS`.
+You can now run `sds.SDS`, this will process the `swarm` and modify it in-place.
 
 ```python
 sds.SDS(I=I, H=H)

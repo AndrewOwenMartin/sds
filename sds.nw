@@ -1373,6 +1373,12 @@ import sds.variants
 import logging
 @
 
+\section{Publishing}
+
+Deploy to PyPi with [[
+pip install twine
+twine upload ./dist/sds-2.0.1.tar.gz]]
+
 \chapter{Indices}
 \section{Index}
 
