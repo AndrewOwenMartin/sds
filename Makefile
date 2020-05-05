@@ -30,14 +30,15 @@ doc: $(project_name).pdf
 
 # Use underscores everywhere except in the chunk name
 %.py: $(project_name).nw
-	notangle -R"$(subst _,-,$@)" -filter btdefn $(project_name).nw | cpif $(library_dir)/$@
+	notangle -R"$(subst _,-,$@)" -filter btdefn $(project_name).nw | cpif $@
 
 project_files = \
-	__init__.py \
-	reducing.py \
-	variants.py \
-	standard.py \
-	test_sds.py
+	sds/__init__.py \
+	sds/reducing.py \
+	sds/variants.py \
+	sds/standard.py \
+	sds/test_sds.py \
+	example/string_search.py
 
 build: $(project_files)
 	chmod 644 $(library_dir)/*.py

@@ -724,6 +724,152 @@ def `round_clusters(clusters):
     return rounded_clusters
 @
 
+\chapter{Example}
+
+First we will define the task, we want to locate a model string in a larger search space string.
+In this case to locate something is to identify the index of the search space which is the first character of the model.
+
+\section{Task definition}
+We will search for this model in this search space
+<<string search task definition>>=
+model = "hello"
+
+search_space = "xxxxxhexlodxxxsakllajadsweklhheaekfjllkahelehlehlehlexxx"
+@
+
+\section{Hypotheses} The full set of hypotheses is therefore the full set of indices of the search space.
+<<string search hypotheses>>=
+hypotheses = range(len(search_space))
+@
+
+\section{Microtests}
+
+For this task there will be one microtest for each letter in the model, each one will test ``Is the \(n\)th letter from my hypothesis the same as the \(n\)th letter of the model?''
+
+First we define the generic version of that test.
+<<string search microtest>>=
+def microtest(hyp, offset, search_space, model):
+
+    search_space_index = hyp + offset
+
+    return (
+        search_space_index < len(search_space) # avoid out of bounds index errors
+        and search_space[search_space_index] == model[offset]
+    )
+@
+
+Then we define a function which will make one microtest for each letter of the model.
+<<string search make microtests>>=
+def make_microtests(search_space, model):
+
+    return [
+        functools.partial(
+            microtest, offset=offset, search_space=search_space, model=model
+        )
+        for offset
+        in range(len(model))
+    ]
+@
+
+We create the microtests like this.
+<<string search microtests>>=
+microtests = make_microtests(search_space, model)
+@
+
+\section{Initialise a swarm}
+<<string search swarm>>=
+swarm = sds.Swarm(agent_count=agent_count)
+@
+
+<<string search params>>=
+agent_count = 50
+@
+
+\section{Compose a Standard SDS}
+<<string search compose sds>>=
+# DH is the mode of hypothesis selection.
+# DH_uniform is uniformly random hypothesis selection.
+DH = sds.DH_uniform(hypotheses=hypotheses, rng=rng)
+
+# D is the mode of diffusion.
+# D_passive is passive diffusion.
+D = sds.D_passive(DH=DH, swarm=swarm, rng=rng)
+
+# TM is the mode of microtest selection.
+# TM_uniform is uniformly random microtest selection.
+TM = sds.TM_uniform(microtests, rng=rng)
+
+# T is the mode of testing.
+# T_boolean is boolean testing.
+T = sds.T_boolean(TM=TM)
+
+# I is the mode of iterations.
+# I_sync is synchronous iteration.
+I = sds.I_sync(D=D, T=T, swarm=swarm)
+
+# H is the mode of halting.
+# H_fixed is fixed number of iterations halting.
+H = sds.H_fixed(iterations=max_iterations)
+
+# SDS executes the variant defined as a combination of I and H
+sds.SDS(I=I, H=H)
+
+# The state of the swarm is now updated
+@
+
+<<string search params>>=
+rng = random.Random()
+
+max_iterations = 100
+@
+
+\section{Extraction of results}
+<<string search extraction>>=
+print("All clusters", swarm.clusters.most_common())
+print("Largest cluster", swarm.largest_cluster)
+@
+
+\subsection{Example file}
+<<example/string-search.py>>=
+<<string search imports>>
+<<string search microtest>>
+<<string search make microtests>>
+def main():
+
+    <<string search params>>
+    <<string search task definition>>
+    <<string search swarm>>
+    <<string search microtests>>
+    <<string search hypotheses>>
+    <<string search compose sds>>
+    <<string search extraction>>
+
+
+if __name__ == "__main__":
+
+    main()
+@
+
+\section{Imports}
+
+Finally we'll make sure we've got everything we need imported.
+
+<<string search imports>>=
+import sds
+import random
+import functools
+@
+
+\section{Results}
+
+If you run [[python -m example.string_search]], this is the output.
+
+[[All clusters [(5, 38)]
+Largest cluster Cluster(hyp=5, agents=38, size=0.76)
+]]
+
+Which means the most common hypothesis is 5, shared by 38 agents. This corresponds to the fifth index of the search space ([[hexlo]]) which is the location where more microtests (4 out of 5) pass than any other.
+
 \chapter{Reducing SDS}
 
 \paragraph{Confirmation reducing diffusion}
@@ -1137,7 +1283,7 @@ def `T_reducing(TM):
 \chapter{Files}
 
 \section{[[standard.py]]}
-<<standard.py>>=
+<<sds/standard.py>>=
 <<standard imports>>
 import logging
 <<init logging>>
@@ -1151,10 +1297,11 @@ import logging
 <<uniform microtest selection>>
 <<fixed iteration halting>>
 <<boolean testing>>
+<<standard sds>>
 @
 
 \section{[[variants.py]]}
-<<variants.py>>=
+<<sds/variants.py>>=
 <<iteration variants>>
 <<diffusion variants>>
 <<diffusion noise functions>>
@@ -1166,7 +1313,7 @@ import logging
 @
 
 \section{[[reducing.py]]}
-<<reducing.py>>=
+<<sds/reducing.py>>=
 <<reducing imports>>
 import logging
 <<init logging>>
@@ -1178,7 +1325,7 @@ import logging
 @
 
 \section{[[__init__.py]]}
-<<--init--.py>>=
+<<sds/--init--.py>>=
 from sds.standard import (
     Agent,
     D_passive,
@@ -1204,7 +1351,7 @@ __all__ = [
 @
 
 \section{[[test-sds.py]]}
-<<test-sds.py>>=
+<<sds/test-sds.py>>=
 <<test imports>>
 class TestSDS(unittest.TestCase):
     def setUp(self):
