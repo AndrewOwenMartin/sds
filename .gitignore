@@ -10,3 +10,4 @@ sds.pdf
 __pycache__/
 build/
 sds.egg-info/
+sds-venv

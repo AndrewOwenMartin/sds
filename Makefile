@@ -30,7 +30,11 @@ project_files = \
 	test_sds.py
 
 build: $(project_files)
+	chmod 644 $(library_dir)/*.py
 	black sds
+
+requirements.txt:
+	pip freeze > requirements.txt
 
 server:
 	when-changed -1 *.nw -c "max_print_line=$(COLS) make build && make doc && date"
