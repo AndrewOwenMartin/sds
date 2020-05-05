@@ -1,0 +1,2 @@
+#! /bin/echo Run like this ". activate" Error message from:
+source ./sds-venv/bin/activate

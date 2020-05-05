@@ -7,6 +7,16 @@ junk = *.toc *.log *.fls *.aux *.pdf *.tex *.fdb_latexmk *.out
 
 all: $(project_name).pdf build sdist
 
+venv: sds-venv/bin/activate activate
+
+sds-venv/bin/activate:
+	python3 -m venv sds-venv
+	sed --in-place -e 's/(sds-venv)/(sds)/' sds-venv/bin/activate
+
+activate:
+	echo '#! /bin/echo Run like this ". activate" Error message from:' > activate
+	echo 'source ./sds-venv/bin/activate' >> activate
+
 COLS := $(shell tput cols)
 
 $(project_name).tex: $(project_name).nw
