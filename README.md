@@ -97,3 +97,21 @@ H = sds.H_fixed(iterations=max_iterations)
 ```
 
 These features are defined in the [Formalism of SDS](doc/formalism.md)
+
+You can now run `sds.SDS`.
+
+```python
+sds.SDS(I=I, H=H)
+```
+
+And a cluster (a number of agents maintaining the same hypothesis) will form at the hypothesis which passes the most microtests.
+
+```python
+>>> print("All clusters", swarm.clusters.most_common())
+
+All clusters [(5, 38)]
+
+>>> print("Largest cluster", swarm.largest_cluster)
+
+Largest cluster Cluster(hyp=5, agents=38, size=0.76)
+```
