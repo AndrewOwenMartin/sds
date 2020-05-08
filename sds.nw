@@ -187,6 +187,30 @@ def `I_sync(D, T, swarm):
     return I
 @
 
+\paragraph{Synchronous iteration with report}
+<<iteration variants>>=
+def `I_report(I, report_num, report_function):
+
+    iteration_counter = itertools.count()
+
+    cycle_counter = itertools.cycle(range(report_num))
+
+    def I_prime():
+
+        iterations = next(iteration_counter)
+        cycle = next(cycle_counter)
+
+        if cycle == 0:
+
+            report_function(iterations)
+
+        I()
+
+    return I_prime
+@
+
+<
+
 \paragraph{Asynchronous iteration}
 
 Each agent in the swarm performs diffusion then testing.
@@ -485,6 +509,10 @@ def `H_time(duration):
         return (now - start) > duration
 
     return H
+@
+
+<<variants imports>>=
+import itertools
 @
 
 \paragraph{Global activity}
@@ -1302,6 +1330,7 @@ import logging
 
 \section{[[variants.py]]}
 <<sds/variants.py>>=
+<<variants imports>>
 <<iteration variants>>
 <<diffusion variants>>
 <<diffusion noise functions>>

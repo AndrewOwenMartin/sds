@@ -130,7 +130,6 @@ def H_fixed(iterations):
         nonlocal iteration_count
         iteration_count += 1
         if iteration_count > iterations:
-            log.log(logging.DEBUG, "h_fixed(%s) halting", iterations)
             return True
         else:
             return False

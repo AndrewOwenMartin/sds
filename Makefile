@@ -1,4 +1,4 @@
-.PHONY: all build server clean sdist
+.PHONY: all build server clean sdist sphinx
 
 #no quotes around my proj
 project_name = sds
@@ -63,3 +63,6 @@ clean:
 	git checkout $(library_dir)
 	rm -rf dist
 	git checkout dist
+
+sphinx:
+	sphinx-build -M dirhtml ./sphinxdoc/ ./sphinxdoc/_build/

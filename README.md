@@ -23,7 +23,185 @@ There are two canonical stories which describe the operation of SDS in simple te
 * [The Restaurant Game](doc/restaurant-game.md)
 * [The Mining Game](doc/mining-game.md)
 
+To see an animation that may help you to understand the process, [go here](https://www.aomartin.co.uk/sds-animation/).
+
 This library allows you to quickly and flexibly apply SDS to many problems.
+
+# Definitions
+
+This library allows you to define an instance of SDS using higher-order functions, that is functions which return other functions.
+
+The main functions are named as follows:
+* `SDS` the wrapper function, calling this iterates the algorithm until halt.
+* `I` the iteration function, called once per iteration.
+* `D` the diffusion function, takes an agent and modifies it as per the mode of diffusion. This function is normally responsible the hypothesis of an agent.
+* `T` the test function, takes an agent and modifies it as per the mode of testing. This function is normally responsible for the activity of an agent.
+* `H` the halting function, this is a function that gets called once per iteration, when it returns *true*, the algorithm halts.
+
+Those are the main functions, it would be hard to describe anything as a variant of SDS if it does not at least use those functions. I also expect any model that is related to SDS to implement something akin to the following two functions.
+
+* `DH` the hypothesis selection function, a function that takes no parameters and returns a hypothesis. This function is not required to be a pure function, even though it takes no parameters, it may still be influenced by state such as the activity of other agents or the history of the calling agent.
+* `TM` the microtest selection function, a function that takes no parameters and returns a microtest function. The microtest function takes a hypothesis as an argument and most commonly returns a boolean value.
+
+What follows is a description of the functions which define **Standard SDS** (what is referred to in some publications as Vanilla SDS), which implements passive diffusion, boolean testing, synchronous iteration, full connectivity, uniformly random hypothesis selection and uniformly random agent polling,
+
+# Standard SDS
+
+First the definition of SDS, this isn't actually a higher order function. It simply takes `I` and `H` and calls `I` until `H` returns *true*.
+
+```python
+def SDS(I, H):
+
+    while not H():
+
+        I()
+```
+
+## Iteration
+
+The standard `I` function, known as synchronous iteration, takes the parameters `D` (the mode of diffusion), `T` (the mode of testing) and a swarm. It returns a function which performs `D` on all agents followed by performing `T` on all agents.
+
+```python
+def I_sync(D, T, swarm):
+
+    def I():
+
+        for agent in swarm:
+            D(agent)
+        for agent in swarm:
+            T(agent)
+
+    return I
+```
+
+## Diffusion
+
+The standard `D` function, known as passive diffusion takes the parameters `DH` (new hypothesis selection), a swarm, and `rng` a random number generator. It performs uniformly random agent polling with the Python function `rng.choice` and selects new hypotheses with `DH`.
+
+```python
+def D_passive(DH, swarm, rng):
+
+    def D(agent):
+
+        if agent.inactive:
+            polled = rng.choice(swarm)
+            if polled.active:
+                agent.hyp = polled.hyp
+            else:
+                agent.hyp = DH()
+
+    return D
+```
+
+### Hypothesis selection
+
+The `DH` function for uniformly random hypothesis selection is simple, though it requires `hypothesis' to be previously defined and passed as a parameter. This can be any data structure understood by the [[rng.choice]] function.
+
+```python
+def DH_uniform(hypotheses, rng):
+
+    def DH():
+
+        return rng.choice(hypotheses)
+
+    return DH
+```
+
+## Testing
+
+The standard `T` function, known as boolean testing takes the parameter `TM` (random microtest selection) and returns a function which performs a randomly selected microtest against the hypothesis of a passed agent.
+
+```python
+def T_boolean(TM):
+
+    def T(agent):
+
+        microtest = TM()
+
+        agent.active = microtest(agent.hyp)
+
+    return T
+```
+
+### Microtest selection
+
+The `TM` function for uniformly random microtest selection also is simple, though it requires `microtests` to be previously defined and passed as a parameter. It also requires a random number generator is passed as a parameter.
+
+```python
+def TM_uniform(microtests, rng):
+
+    def TM():
+
+        return rng.choice(microtests)
+
+    return TM
+```
+
+## Halting
+
+Finally a halting function needs to be defined, to keep it simple I'll use the function for halting after a fixed number of iterations. This higher-order function therefore requires the maximum number of iteration as a parameter, and returns a function that returns true once it has been called that number of times. Ignore the [[nonlocal]] Python keyword, that's required to clarify the scope of the `iteration_count` variable.
+
+
+```python
+def H_fixed(iterations):
+
+    iteration_count = 0
+
+    def H():
+
+        nonlocal iteration_count
+
+        iteration_count += 1
+
+        return bool(iteration_count > iterations)
+
+    return H
+```
+
+## Conclusion
+
+Given the above an instance of SDS can be defined in a way resembling maths.
+
+```python
+T_standard = T_boolean(TM_uniform(microtests, rng))
+
+D_standard = D_passive(DH_uniform(hypotheses, rng), swarm, rng)
+
+I_standard = I_sync(T_standard, D_standard)
+
+SDS_standard = lambda H: SDS(I_standard, H)
+
+H_standard = H_fixed(1000)
+
+SDS_standard(H=H_standard)
+
+```
+
+or as a fully defined convenience function
+
+```python
+def standard_sds(microtests, hypotheses, agent_count, max_iterations):
+
+    rng = random.Random() # instantiate a random number generator
+
+    swarm = Swarm(agent_count=agent_count) # instantiate a swarm of agents
+
+    DH = DH_uniform(hypotheses=hypotheses, rng=rng)
+
+    D = D_passive(DH=DH, swarm=swarm, rng=rng)
+
+    TM = TM_uniform(microtests=microtests, rng=rng)
+
+    T = T_boolean(TM=TM)
+
+    I = I_sync(D=D, T=T, swarm=swarm)
+
+    H = H_fixed(iterations=max_iterations)
+
+    sds.SDS(I=I, H=H)
+
+    return swarm
+```
 
 # Example
 

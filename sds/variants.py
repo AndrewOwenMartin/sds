@@ -1,3 +1,26 @@
+import itertools
+
+
+def I_report(I, report_num, report_function):
+
+    iteration_counter = itertools.count()
+
+    cycle_counter = itertools.cycle(range(report_num))
+
+    def I_prime():
+
+        iterations = next(iteration_counter)
+        cycle = next(cycle_counter)
+
+        if cycle == 0:
+
+            report_function(iterations)
+
+        I()
+
+    return I_prime
+
+
 def I_async(D, T, swarm):
     def I_prime():
 
