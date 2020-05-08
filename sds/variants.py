@@ -129,7 +129,7 @@ def D_noise(swarm, DN, DH, rng):
 
 
 def DN_gauss(mean, sigma, rng):
-    """ add noise from a gaussian distribution to hypothesis transmission """
+    """ Add noise from a gaussian distribution to hypothesis transmission """
 
     def DN(hyp):
 
@@ -139,7 +139,7 @@ def DN_gauss(mean, sigma, rng):
 
 
 def DN_normal(rng):
-    """ add noise from a normal gaussian distribution to hypothesis
+    """ Add noise from a normal gaussian distribution to hypothesis
     transmission """
 
     DN = DN_gauss(mean=0, sigma=1, rng=rng)
@@ -188,7 +188,7 @@ def TM_multitesting(microtests, rng, multitesting_amount, combinator):
 
 
 def H_threshold(swarm, threshold):
-    """ makes a function for halting once the global activity is over a fixed
+    """ Makes a function for halting once the global activity is over a fixed
     threshold """
 
     def H():
@@ -211,7 +211,7 @@ def H_threshold(swarm, threshold):
 
 
 def H_largest_cluster_threshold(swarm, threshold):
-    """ makes a function for halting once the largest cluster activity is over
+    """ Makes a function for halting once the largest cluster activity is over
     a fixed threshold """
 
     def H():

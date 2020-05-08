@@ -39,7 +39,13 @@ def `SDS(I, H):
 \section{Agent}
 <<standard agent>>=
 class `Agent:
+    """ Represents an agent, contains only an activity and a hypothesis, most
+    of the time if activity is falsy then the hypothesis can be undefined. """
+
     def __init__(self, active=False, hyp=None):
+        """ Initialise an agent with an activity and a hypothesis, default is
+        to be inactive with None for the hypothesis. """
+
         self.active = active
         self.hyp = hyp
 
@@ -47,11 +53,6 @@ class `Agent:
     def inactive(self):
 
         return not self.active
-
-    @property
-    def clone(self):
-
-        return ReadOnlyAgent(active=self.active, hyp=self.hyp)
 
     def __iter__(self):
 
@@ -347,7 +348,7 @@ def `D_noise(swarm, DN, DH, rng):
 \paragraph{Gaussian noise}
 <<diffusion noise functions>>=
 def `DN_gauss(mean, sigma, rng):
-    """ add noise from a gaussian distribution to hypothesis transmission """
+    """ Add noise from a gaussian distribution to hypothesis transmission """
 
     def DN(hyp):
 
@@ -359,7 +360,7 @@ def `DN_gauss(mean, sigma, rng):
 \paragraph{Normal distribution noise}
 <<diffusion noise functions>>=
 def `DN_normal(rng):
-    """ add noise from a normal gaussian distribution to hypothesis
+    """ Add noise from a normal gaussian distribution to hypothesis
     transmission """
 
     DN = DN_gauss(mean=0, sigma=1, rng=rng)
@@ -372,7 +373,7 @@ def `DN_normal(rng):
 \paragraph{Uniform random}
 <<uniform hypothesis selection>>=
 def `DH_uniform(hypotheses, rng):
-    """ uniformly random hypothesis generation """
+    """ Uniformly random hypothesis generation """
 
     def DH():
 
@@ -455,7 +456,7 @@ def `TM_multitesting(microtests, rng, multitesting_amount, combinator):
 \paragraph{Uniform random}
 <<uniform microtest selection>>=
 def `TM_uniform(microtests, rng):
-    """ uniform microtest selection """
+    """ Uniformly random microtest selection """
 
     def TM():
 
@@ -469,7 +470,7 @@ def `TM_uniform(microtests, rng):
 \paragraph{Fixed iteration}
 <<fixed iteration halting>>=
 def `H_fixed(iterations):
-    """ makes a function for halting after a fixed number of iterations """
+    """ Makes a function for halting after a fixed number of iterations """
 
     iteration_count = 0
 
@@ -518,7 +519,7 @@ import itertools
 \paragraph{Global activity}
 <<halting variants>>=
 def `H_threshold(swarm, threshold):
-    """ makes a function for halting once the global activity is over a fixed
+    """ Makes a function for halting once the global activity is over a fixed
     threshold """
 
     def H():
@@ -543,7 +544,7 @@ def `H_threshold(swarm, threshold):
 \paragraph{Largest cluster}
 <<halting variants>>=
 def `H_largest_cluster_threshold(swarm, threshold):
-    """ makes a function for halting once the largest cluster activity is over
+    """ Makes a function for halting once the largest cluster activity is over
     a fixed threshold """
 
     def H():

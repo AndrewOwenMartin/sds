@@ -5,7 +5,13 @@ log = logging.getLogger(__name__)
 
 
 class Agent:
+    """ Represents an agent, contains only an activity and a hypothesis, most
+    of the time if activity is falsy then the hypothesis can be undefined. """
+
     def __init__(self, active=False, hyp=None):
+        """ Initialise an agent with an activity and a hypothesis, default is
+        to be inactive with None for the hypothesis. """
+
         self.active = active
         self.hyp = hyp
 
@@ -13,11 +19,6 @@ class Agent:
     def inactive(self):
 
         return not self.active
-
-    @property
-    def clone(self):
-
-        return ReadOnlyAgent(active=self.active, hyp=self.hyp)
 
     def __iter__(self):
 
@@ -157,7 +158,7 @@ def D_passive(DH, swarm, rng):
 
 
 def DH_uniform(hypotheses, rng):
-    """ uniformly random hypothesis generation """
+    """ Uniformly random hypothesis generation """
 
     def DH():
 
@@ -167,7 +168,7 @@ def DH_uniform(hypotheses, rng):
 
 
 def TM_uniform(microtests, rng):
-    """ uniform microtest selection """
+    """ Uniformly random microtest selection """
 
     def TM():
 
@@ -177,7 +178,7 @@ def TM_uniform(microtests, rng):
 
 
 def H_fixed(iterations):
-    """ makes a function for halting after a fixed number of iterations """
+    """ Makes a function for halting after a fixed number of iterations """
 
     iteration_count = 0
 

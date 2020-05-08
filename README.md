@@ -184,19 +184,19 @@ def standard_sds(microtests, hypotheses, agent_count, max_iterations):
 
     rng = random.Random() # instantiate a random number generator
 
-    swarm = Swarm(agent_count=agent_count) # instantiate a swarm of agents
+    swarm = sds.Swarm(agent_count=agent_count) # instantiate a swarm of agents
 
-    DH = DH_uniform(hypotheses=hypotheses, rng=rng)
+    DH = sds.DH_uniform(hypotheses=hypotheses, rng=rng)
 
-    D = D_passive(DH=DH, swarm=swarm, rng=rng)
+    D = sds.D_passive(DH=DH, swarm=swarm, rng=rng)
 
-    TM = TM_uniform(microtests=microtests, rng=rng)
+    TM = sds.TM_uniform(microtests=microtests, rng=rng)
 
-    T = T_boolean(TM=TM)
+    T = sds.T_boolean(TM=TM)
 
-    I = I_sync(D=D, T=T, swarm=swarm)
+    I = sds.I_sync(D=D, T=T, swarm=swarm)
 
-    H = H_fixed(iterations=max_iterations)
+    H = sds.H_fixed(iterations=max_iterations)
 
     sds.SDS(I=I, H=H)
 
