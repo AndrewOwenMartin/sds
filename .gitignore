@@ -11,3 +11,4 @@ __pycache__/
 build/
 sds.egg-info/
 sds-venv
+sphinxdoc/_build

@@ -65,4 +65,5 @@ clean:
 	git checkout dist
 
 sphinx:
+	sphinx-autogen sphinxdoc/index.rst
 	sphinx-build -M dirhtml ./sphinxdoc/ ./sphinxdoc/_build/
